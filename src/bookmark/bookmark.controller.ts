@@ -27,7 +27,7 @@ export class BookmarkController {
     }
 
     @Patch(':id')
-    editBookmarkById(@GetUser('id') userId:number,@Param() bookmarkId:number,@Body() dto:EditBookmarkDto) {
+    editBookmarkById(@GetUser('id') userId:number,@Param('id',ParseIntPipe) bookmarkId:number,@Body() dto:EditBookmarkDto) {
         return this.bookmarkService.editBookmarkById(userId,bookmarkId,dto)
 
     }

@@ -34,7 +34,7 @@ CREATE TABLE "bookmarks" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "title" TEXT NOT NULL,
     "link" TEXT NOT NULL,
-    "desciption" TEXT,
+    "description" TEXT,
     "userId" INTEGER NOT NULL,
 
     CONSTRAINT "bookmarks_pkey" PRIMARY KEY ("id")

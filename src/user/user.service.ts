@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EditUserDto } from './dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
