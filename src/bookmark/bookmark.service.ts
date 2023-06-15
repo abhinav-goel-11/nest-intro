@@ -10,11 +10,13 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookmarkDto, EditBookmarkDto } from './dto';
 import { generateRedisKey } from './helper';
 import Redis from 'ioredis';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class BookmarkService {
   constructor(
     private prisma: PrismaService,
+    private config:ConfigService,
     @Inject('REDIS_CLIENT') private redisClient: Redis,
   ) {}
 
@@ -39,6 +41,9 @@ export class BookmarkService {
         userId,
       },
     });
+    if(dbData.length === 0){
+      throw new NotFoundException('No data available');
+    }
     //update data in redis(this condition will run when the redis cache expires)
     console.log('cache is expired data from db dbData ======> ', dbData);
     dbData.map(async (obj) => {
@@ -46,7 +51,7 @@ export class BookmarkService {
         `key:${obj.userId}:${obj.id}`,
         JSON.stringify(obj),
       );
-      await this.redisClient.expire(`key:${obj.userId}:${obj.id}`, 15);
+      await this.redisClient.expire(`key:${obj.userId}:${obj.id}`, this.config.get('KEY_EXPIRY'));
     });
     console.log(
       'data saved in redis cache successfully',
@@ -89,7 +94,7 @@ export class BookmarkService {
 
     // Store the data in Redis cache
     await this.redisClient.set(rediskey, JSON.stringify(dbData));
-    await this.redisClient.expire(rediskey, 15);
+    await this.redisClient.expire(rediskey, this.config.get('KEY_EXPIRY'));
     return dbData;
   }
 
@@ -107,7 +112,7 @@ export class BookmarkService {
     // Store the data in Redis cache
     console.log('_____creating the bookmark in redis_____');
     await this.redisClient.set(rediskey, JSON.stringify(bookmark));
-    await this.redisClient.expire(rediskey, 15);
+    await this.redisClient.expire(rediskey, this.config.get('KEY_EXPIRY'));
     console.log('____bookmark stored in redis cache');
     return bookmark;
   }
@@ -126,6 +131,8 @@ export class BookmarkService {
       throw new ForbiddenException('Access to data resource denied');
     }
 
+    //does the key to be updated exist in cache if no then upgrade in db dont push it to redis
+
     const res = await this.prisma.bookmark.update({
       where: {
         id: bookmarkId,
@@ -137,7 +144,7 @@ export class BookmarkService {
     const rediskey = generateRedisKey(userId, bookmark.id);
     //updating in redis cache
     await this.redisClient.set(rediskey, JSON.stringify(res));
-    await this.redisClient.expire(rediskey, 15);
+    await this.redisClient.expire(rediskey, this.config.get('KEY_EXPIRY'));
     console.log('updates bookmark in db and redis');
     return res;
   }
